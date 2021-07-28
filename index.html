@@ -26,24 +26,20 @@
       }
       #content {
         width: 80%;
+        padding: 16px;
         background: #1d1d1f;
         border-radius: 4px;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-      }
-      #line {
-        width: 100%;
-        height: 32px;
-        margin: 4px;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
+        font-size: 16px;
         line-height: 32px;
         color: #f5f5f7;
+      }
+      #remote-to-main-count {
+        font-size: 32px;
+        color: #637511;
       }
     </style>
   </head>
@@ -51,14 +47,8 @@
     <div id="root">
       <div id="title">IPC内外衔接测试</div>
       <div id="content">
-        <div id="line">
-          渲染进程至主进程的交换消息分发速度：
-          <div id="remote-to-main-count">0</div>
-        </div>
-        <div id="line">
-          主进程至外部进程的交换消息分发速度：
-          <div id="main-to-outside-count">0</div>
-        </div><div id="line">
+        渲染进程至主进程的交换消息分发速度：
+        <div id="remote-to-main-count">0</div>
       </div>
       <script>
         let count = 0;
@@ -69,7 +59,8 @@
         }, 1000);
 
         const { ipcRenderer } = require('electron');
-        ipcRenderer.on('asynchronous-reply', (_event, { type }) => {
+        ipcRenderer.on('asynchronous-reply', (_event, raw) => {
+          const { type } = JSON.parse(raw);
           switch (type) {
             case 'pong':
               count += 1;
@@ -81,13 +72,6 @@
               );
           }
         });
-        ipcRenderer.send(
-          'asynchronous-message',
-          JSON.stringify({
-            type: 'ping',
-            data: '1',
-          })
-        );
       </script>
     </div>
   </body>

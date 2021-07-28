@@ -4,16 +4,17 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "tsc && chcp 65001 && electron ./client.js"
+    "build": "tsc",
+    "start": "npm run build && concurrently \"npm run start:client\"",
+    "start:client": "chcp 65001 && electron ./client.js",
+    "start:server": "node server.js"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^16.4.5",
+    "concurrently": "^6.2.0",
     "electron": "^13.1.7",
     "typescript": "^4.3.5"
-  },
-  "dependencies": {
-    "node-ipc": "^10.0.2"
   }
 }
