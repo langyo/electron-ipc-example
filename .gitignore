@@ -1,0 +1,6 @@
+*.js
+*.js.map
+package-lock.json
+yarn.lock
+*.swf
+node_modules
