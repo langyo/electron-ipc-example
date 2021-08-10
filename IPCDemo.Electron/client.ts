@@ -41,6 +41,17 @@ outsideIpcServer.on('error', (err) => {
   log('对外 IPC 通道发生错误：', err);
 });
 
+import { spawn } from 'child_process';
+let childProcess = spawn('node', [join(__dirname, './server.js')], {
+  stdio: 'inherit',
+  detached: true,
+  shell: true,
+});
+
+process.on('exit', () => {
+  childProcess.kill();
+});
+
 app.whenReady().then(() => {
   ipcMain.on('asynchronous-message', (_event, raw) => {
     const { type } = JSON.parse(raw);
@@ -62,15 +73,8 @@ app.whenReady().then(() => {
     },
   });
 
-  win.loadFile(join(__dirname, './index.html'));
-});
-
-import { spawn } from 'child_process';
-let childProcess = spawn('node', [join(__dirname, './server.js')], {
-  stdio: 'inherit',
-  detached: true,
-  shell: true,
-});
-process.on('exit', () => {
-  childProcess.kill();
+  win.loadFile(join(process.cwd(), './index.html'));
+  win.on('closed', () => {
+    childProcess.kill();
+  });
 });

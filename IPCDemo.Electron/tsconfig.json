@@ -3,6 +3,7 @@
     "module": "CommonJS",
     "moduleResolution": "Node",
     "sourceMap": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "outDir": "./obj"
   }
 }
