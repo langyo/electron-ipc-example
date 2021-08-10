@@ -29,7 +29,7 @@ let outsideIpcServer = createServer((connect) => {
     switch (type) {
       case 'pong':
         count += 1;
-        win.webContents.send(
+        win?.webContents.send(
           'asynchronous-reply',
           JSON.stringify({ type: 'pong' })
         );
@@ -37,9 +37,6 @@ let outsideIpcServer = createServer((connect) => {
     }
   });
 }).listen(join('\\\\?\\pipe', '\\electronIPCDemo'));
-outsideIpcServer.on('error', (err) => {
-  log('对外 IPC 通道发生错误：', err);
-});
 
 import { spawn } from 'child_process';
 let childProcess = spawn('node', [join(__dirname, './server.js')], {
@@ -48,17 +45,13 @@ let childProcess = spawn('node', [join(__dirname, './server.js')], {
   shell: true,
 });
 
-process.on('exit', () => {
-  childProcess.kill();
-});
-
 app.whenReady().then(() => {
   ipcMain.on('asynchronous-message', (_event, raw) => {
     const { type } = JSON.parse(raw);
 
     switch (type) {
       case 'ping':
-        connection.write(JSON.stringify({ type: 'ping' }));
+        connection?.write(JSON.stringify({ type: 'ping' }));
         break;
     }
   });
@@ -74,7 +67,10 @@ app.whenReady().then(() => {
   });
 
   win.loadFile(join(process.cwd(), './index.html'));
-  win.on('closed', () => {
-    childProcess.kill();
+  win.on('close', () => {
+    outsideIpcServer.close(() => {
+      childProcess.kill();
+      process.exit(0);
+    });
   });
 });

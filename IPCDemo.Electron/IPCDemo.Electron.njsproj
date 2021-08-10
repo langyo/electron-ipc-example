@@ -8,7 +8,8 @@
     <ScriptArguments>
     </ScriptArguments>
     <NodeExePath>node_modules/electron/dist/electron.exe</NodeExePath>
-    <NodeExeArguments>--inspect-brk</NodeExeArguments>
+    <NodeExeArguments>
+    </NodeExeArguments>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
