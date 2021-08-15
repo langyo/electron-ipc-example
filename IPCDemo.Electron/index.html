@@ -1,74 +1,72 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <title>IPC内外衔接测试</title>
-  <style>
-    #root {
-      position: fixed;
-      left: 0px;
-      top: 0px;
-      height: 100%;
-      width: 100%;
-      margin: 0px;
-      background: #2f4e7a;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
+  <head>
+    <title>IPC内外衔接测试</title>
+    <style>
+      #root {
+        position: fixed;
+        left: 0px;
+        top: 0px;
+        height: 100%;
+        width: 100%;
+        margin: 0px;
+        background: #2f4e7a;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
 
-    #title {
-      height: 32px;
-      margin: 16px;
-      line-height: 32px;
-      font-size: 32px;
-      color: #f5f5f7;
-      user-select: none;
-    }
+      #title {
+        height: 32px;
+        margin: 16px;
+        line-height: 32px;
+        font-size: 32px;
+        color: #f5f5f7;
+        user-select: none;
+      }
 
-    #content {
-      width: 80%;
-      padding: 16px;
-      background: #1d1d1f;
-      border-radius: 4px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      line-height: 32px;
-      color: #f5f5f7;
-    }
+      #content {
+        width: 80%;
+        padding: 16px;
+        background: #1d1d1f;
+        border-radius: 4px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        line-height: 32px;
+        color: #f5f5f7;
+      }
 
-    #remote-to-main-count {
-      font-size: 32px;
-      color: #637511;
-    }
-  </style>
-</head>
-<body>
-  <div id="root">
-    <div id="title">IPC内外衔接测试</div>
-    <div id="content">
-      渲染进程至主进程的交换消息分发速度：
-      <div id="remote-to-main-count">0</div>
+      #remote-to-main-count {
+        font-size: 32px;
+        color: #637511;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div id="title">IPC内外衔接测试</div>
+      <div id="content">
+        渲染进程至主进程的交换消息分发速度：
+        <div id="remote-to-main-count">0</div>
+      </div>
+      <script>
+        let count = 0;
+        setInterval(() => {
+          document.querySelector('#remote-to-main-count').innerText = count;
+          count = 0;
+        }, 1000);
+
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.on('asynchronous-reply', (_event, raw) => {
+          count += 1;
+          console.log(raw);
+          ipcRenderer.send('asynchronous-message', +raw + 1);
+        });
+      </script>
     </div>
-    <script>
-      let count = 0;
-      setInterval(() => {
-        document.querySelector('#remote-to-main-count').innerText = count;
-        count = 0;
-      }, 1000);
-
-      const { ipcRenderer } = require('electron');
-      ipcRenderer.on('asynchronous-reply', (_event, _raw) => {
-        count += 1;
-        ipcRenderer.send(
-          'asynchronous-message',
-          'pong'
-        );
-      });
-    </script>
-  </div>
-</body>
+  </body>
 </html>
