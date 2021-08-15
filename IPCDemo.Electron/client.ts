@@ -1,59 +1,48 @@
-function log(...args) {
-  console.log(`[主进程] ${new Date(Date.now()).toLocaleTimeString()}`, ...args);
-}
-
 let win: BrowserWindow;
-let count = 0;
-setInterval(() => {
-  log('分发速度：', count);
-  count = 0;
-}, 1000);
 
 import { join } from 'path';
+import { Buffer } from 'buffer';
 import { app, BrowserWindow, ipcMain } from 'electron';
 import { createServer, Socket } from 'net';
 
 let connection: Socket;
 let outsideIpcServer = createServer((connect) => {
+  console.log('已检测到连接');
   connection = connect;
-  connect.setEncoding('utf8');
   connect.on('error', (err) => {
-    log('对外 IPC 通道发生错误：', err);
+    console.log(`对外 IPC 通道发生错误: ${err}`);
     connect.end();
   });
   connect.on('close', () => {
-    log('对外 IPC 通道已关闭');
+    console.log('对外 IPC 通道已关闭');
   });
-  connect.on('data', (data: string) => {
-    const { type } = JSON.parse(data);
-    switch (type) {
-      case 'pong':
-        count += 1;
-        win?.webContents.send(
-          'asynchronous-reply',
-          JSON.stringify({ type: 'pong' })
-        );
-        break;
-    }
+  connect.on('data', (data: Buffer) => {
+    console.log(data.slice(2).toString('utf8'));
+    win?.webContents.send(
+      'asynchronous-reply',
+      'ping'
+    );
   });
+  let buffer = Buffer.from('ping');
+  let length = buffer.byteLength;
+  buffer = Buffer.concat([Buffer.from([Math.ceil(length / 256), length % 256]), buffer]);
+  connection?.write(buffer);
 }).listen(join('\\\\?\\pipe', '\\electronIPCDemo'));
 
-import { spawn } from 'child_process';
-let childProcess = spawn('node', [join(__dirname, './server.js')], {
-  stdio: 'inherit',
-  detached: true,
-  shell: true,
+import { execFile } from 'child_process';
+console.log('尝试启动外部进程...');
+let childProcess = execFile(join(process.cwd(), '../IPCDemo.CS/bin/Debug/net5.0/IPCDemo.CS.exe'), err => {
+  if (err) {
+    console.error(err);
+  }
 });
 
 app.whenReady().then(() => {
-  ipcMain.on('asynchronous-message', (_event, raw) => {
-    const { type } = JSON.parse(raw);
-
-    switch (type) {
-      case 'ping':
-        connection?.write(JSON.stringify({ type: 'ping' }));
-        break;
-    }
+  ipcMain.on('asynchronous-message', (_event, _raw) => {
+    let buffer = Buffer.from('ping');
+    let length = buffer.byteLength;
+    buffer = Buffer.concat([Buffer.from([Math.ceil(length / 256), length % 256]), buffer]);
+    connection?.write(buffer);
   });
 
   win = new BrowserWindow({
