@@ -2,7 +2,8 @@
   "name": "electron-ipc-demo",
   "private": true,
   "scripts": {
-    "build": "tsc",
+    "postinstall": "cd ../IPCDemo.CS && dotnet restore",
+    "build": "tsc && cd ../IPCDemo.CS && dotnet build",
     "start": "npm run build && chcp 65001 && electron ./obj/client.js"
   },
   "author": "langyo",
