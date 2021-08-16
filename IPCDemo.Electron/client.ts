@@ -50,10 +50,10 @@ let outsideIpcServer = createServer((connect) => {
   );
 }).listen(join('\\\\?\\pipe', '\\electronIPCDemo'));
 
-import { execFile } from 'child_process';
+import { exec } from 'child_process';
 console.log('尝试启动外部进程...');
-let childProcess = execFile(
-  join(process.cwd(), '../IPCDemo.CS/bin/Debug/net5.0/IPCDemo.CS.exe'),
+let childProcess = exec(
+  `${join(process.cwd(), '../IPCDemo.CS/bin/Debug/net5.0/IPCDemo.CS.exe')} fuck you`,
   (err) => {
     if (err) {
       console.error(err);

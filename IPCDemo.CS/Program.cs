@@ -35,7 +35,7 @@ namespace IPCDemo.CS
         ss.Write(new IMsg
         {
           caller = s.caller,
-          callee = s.callee,
+          callee = args[1],
           args = new string[1] { Convert.ToString(num) }
         });
       }
