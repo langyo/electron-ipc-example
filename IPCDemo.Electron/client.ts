@@ -22,7 +22,7 @@ function encodeBuffer(obj: IMsg): Buffer {
 function decodeBuffer(buffer: Buffer): IMsg {
   let length = buffer[0] * 256 + buffer[1];
   if (buffer.length !== length + 2) {
-    throw Error('暂未支持分包解析与接包解析');
+    throw Error(`无法分析的消息长度，预计长度 ${length + 2}，实际长度 ${buffer.length}`);
   }
   return JSON.parse(buffer.slice(2).toString('utf8'));
 }
