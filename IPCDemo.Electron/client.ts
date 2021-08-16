@@ -5,6 +5,28 @@ import { Buffer } from 'buffer';
 import { app, BrowserWindow, ipcMain } from 'electron';
 import { createServer, Socket } from 'net';
 
+interface IMsg {
+  caller: number;
+  callee: string;
+  args: string[];
+}
+
+function encodeBuffer(obj: IMsg): Buffer {
+  let buffer = Buffer.from(JSON.stringify(obj));
+  return Buffer.concat([
+    Buffer.from([Math.floor(buffer.byteLength / 256), buffer.byteLength % 256]),
+    buffer,
+  ]);
+}
+
+function decodeBuffer(buffer: Buffer): IMsg {
+  let length = buffer[0] * 256 + buffer[1];
+  if (buffer.length !== length + 2) {
+    throw Error('暂未支持分包解析与接包解析');
+  }
+  return JSON.parse(buffer.slice(2).toString('utf8'));
+}
+
 let connection: Socket;
 let outsideIpcServer = createServer((connect) => {
   console.log('已检测到连接');
@@ -17,21 +39,15 @@ let outsideIpcServer = createServer((connect) => {
     console.log('对外 IPC 通道已关闭');
   });
   connect.on('data', (data: Buffer) => {
-    const num = data.slice(2).toString('utf8');
-    console.log('即将接收:', data[0] * 256 + data[1], num);
-    win?.webContents.send('asynchronous-reply', num);
+    const { caller, callee, args: [numStr] } = decodeBuffer(data);
+    console.log('入口:', caller, callee, numStr);
+    win?.webContents.send('asynchronous-reply', numStr);
   });
-  let buffer = Buffer.from('114514');
-  buffer = Buffer.concat([
-    Buffer.from([Math.floor(buffer.byteLength / 256), buffer.byteLength % 256]),
-    buffer,
-  ]);
-  console.log(
-    '即将写出:',
-    buffer[0] * 256 + buffer[1],
-    buffer.slice(2).toString('utf8')
+  const time = Date.now();
+  console.log('出口:', time, 'test', '0');
+  connection?.write(
+    encodeBuffer({ caller: time, callee: 'test', args: ['0'] })
   );
-  connection?.write(buffer);
 }).listen(join('\\\\?\\pipe', '\\electronIPCDemo'));
 
 import { execFile } from 'child_process';
@@ -47,20 +63,11 @@ let childProcess = execFile(
 
 app.whenReady().then(() => {
   ipcMain.on('asynchronous-message', (_event, raw) => {
-    let buffer = Buffer.from(`${raw}`);
-    buffer = Buffer.concat([
-      Buffer.from([
-        Math.floor(buffer.byteLength / 256),
-        buffer.byteLength % 256,
-      ]),
-      buffer,
-    ]);
-    console.log(
-      '即将写出:',
-      buffer[0] * 256 + buffer[1],
-      buffer.slice(2).toString('utf8')
+    const time = Date.now();
+    console.log('出口:', time, 'test', raw);
+    connection?.write(
+      encodeBuffer({ caller: time, callee: 'test', args: [`${raw}`] })
     );
-    connection?.write(buffer);
   });
 
   win = new BrowserWindow({

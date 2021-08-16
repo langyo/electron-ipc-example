@@ -3,9 +3,18 @@ using System.IO;
 using System.IO.Pipes;
 using System.Security.Principal;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace IPCDemo.CS
 {
+  public class IMsg
+  {
+    public Int64 caller { get; set; }
+    public string callee { get; set; }
+    public string[] args { get; set; }
+  }
+
   public class PipeClient
   {
     public static void Main(string[] args)
@@ -19,10 +28,16 @@ namespace IPCDemo.CS
       pipeClient.Connect();
 
       var ss = new StreamString(pipeClient);
-      for (var s = ss.ReadString(); ; s = ss.ReadString())
+      for (var s = ss.Read(); ; s = ss.Read())
       {
-        Console.WriteLine(s);
-        ss.WriteString(s);
+        int num = Convert.ToInt32(s.args[0]);
+        num += 1;
+        ss.Write(new IMsg
+        {
+          caller = s.caller,
+          callee = s.callee,
+          args = new string[1] { Convert.ToString(num) }
+        });
       }
       // pipeClient.Close();
     }
@@ -32,28 +47,24 @@ namespace IPCDemo.CS
   public class StreamString
   {
     private Stream ioStream;
-    private UnicodeEncoding streamEncoding;
 
     public StreamString(Stream ioStream)
     {
       this.ioStream = ioStream;
-      streamEncoding = new UnicodeEncoding();
     }
 
-    public string ReadString()
+    public IMsg Read()
     {
-      int len;
-      len = ioStream.ReadByte() * 256;
-      len += ioStream.ReadByte();
+      int len = ioStream.ReadByte() * 256 + ioStream.ReadByte();
       var inBuffer = new byte[len];
       ioStream.Read(inBuffer, 0, len);
 
-      return streamEncoding.GetString(inBuffer);
+      return JsonSerializer.Deserialize<IMsg>(inBuffer);
     }
 
-    public int WriteString(string outString)
+    public int Write(IMsg msg)
     {
-      byte[] outBuffer = streamEncoding.GetBytes(outString);
+      byte[] outBuffer = JsonSerializer.SerializeToUtf8Bytes(msg);
       int len = outBuffer.Length;
       ioStream.WriteByte((byte)(len / 256));
       ioStream.WriteByte((byte)(len % 256));
