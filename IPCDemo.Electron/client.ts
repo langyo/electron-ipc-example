@@ -3,7 +3,7 @@ let win: BrowserWindow;
 import { join } from 'path';
 import { Buffer } from 'buffer';
 import { app, BrowserWindow, ipcMain } from 'electron';
-import { createServer, Socket } from 'net';
+import { createServer, createConnection, Socket } from 'net';
 import { v4 as generateUUID } from 'uuid';
 
 interface IMsg {
@@ -32,6 +32,8 @@ function decodeBuffer(buffer: Buffer): IMsg {
 
 let outsideIPCServerConnection: Socket;
 let outsideIPCServerAddress: string = generateUUID();
+let outsideIPCClientConnection: Socket;
+let outsideIPCClientAddress: string;
 let outsideIPCServer = createServer((connect) => {
   console.log('已检测到连接');
   outsideIPCServerConnection = connect;
@@ -47,10 +49,23 @@ let outsideIPCServer = createServer((connect) => {
     console.log('入口:', caller, callee, args);
     switch (callee) {
       case '$shakehand':
-        const uuid = 'frontend-' + generateUUID();
-        console.log('出口:', uuid, 'test', ['0']);
-        outsideIPCServerConnection?.write(
-          encodeBuffer({ caller: uuid, callee: 'test', args: [`${0}`] })
+        outsideIPCClientAddress = args[0];
+        outsideIPCClientConnection = createConnection(
+          join('\\\\?\\pipe', `\\${outsideIPCClientAddress}`),
+          () => {
+            console.log(
+              '双向 IPC 已握手',
+              outsideIPCClientAddress,
+              '<->',
+              outsideIPCServerAddress
+            );
+            // 创建连接后，发起第一次消息交换
+            const uuid = 'web-' + generateUUID();
+            console.log('出口:', uuid, 'test', ['0']);
+            outsideIPCClientConnection?.write(
+              encodeBuffer({ caller: uuid, callee: 'test', args: [`${0}`] })
+            );
+          }
         );
         break;
       case 'test':
@@ -76,9 +91,9 @@ let childProcess = exec(
 
 app.whenReady().then(() => {
   ipcMain.on('asynchronous-message', (_event, raw) => {
-    const uuid = 'frontend-' + generateUUID();
+    const uuid = 'web-' + generateUUID();
     console.log('出口:', uuid, 'test', [`${raw}`]);
-    outsideIPCServerConnection?.write(
+    outsideIPCClientConnection?.write(
       encodeBuffer({ caller: uuid, callee: 'test', args: [`${raw}`] })
     );
   });

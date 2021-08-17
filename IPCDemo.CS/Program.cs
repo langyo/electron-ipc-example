@@ -23,17 +23,21 @@ namespace IPCDemo.CS
               PipeDirection.InOut, PipeOptions.None,
               TokenImpersonationLevel.Impersonation);
       socketClient.Connect();
-      var socketClientStream = new StreamString(socketClient);
+      var socketClientStream = new Stream(socketClient);
 
       // 创建自己的命名管道，并将命名管道的名称交给对方
       string socketServerAddress = Guid.NewGuid().ToString();
+      var socketServer = new NamedPipeServerStream(socketServerAddress, PipeDirection.InOut, 1);
+      var socketServerStream = new Stream(socketServer);
       socketClientStream.Write(new IMsg
       {
-        caller = "backend-" + Guid.NewGuid().ToString(),
+        caller = "cs-" + Guid.NewGuid().ToString(),
         callee = "$shakehand",
         args = new string[1] { socketServerAddress }
       });
-      for (var s = socketClientStream.Read(); ; s = socketClientStream.Read())
+      socketServer.WaitForConnection();
+
+      for (var s = socketServerStream.Read(); ; s = socketServerStream.Read())
       {
         int num = Convert.ToInt32(s.args[0]);
         num += 1;
@@ -44,16 +48,14 @@ namespace IPCDemo.CS
           args = new string[1] { Convert.ToString(num) }
         });
       }
-      // pipeClient.Close();
     }
   }
 
-  // Defines the data protocol for reading and writing strings on our stream.
-  public class StreamString
+  public class Stream
   {
-    private Stream ioStream;
+    private System.IO.Stream ioStream;
 
-    public StreamString(Stream ioStream)
+    public Stream(System.IO.Stream ioStream)
     {
       this.ioStream = ioStream;
     }

@@ -50,13 +50,13 @@
     <div id="root">
       <div id="title">IPC内外衔接测试</div>
       <div id="content">
-        渲染进程至主进程的交换消息分发速度：
-        <div id="remote-to-main-count">0</div>
+        交换消息分发速度
+        <div id="remote-to-main-count">0 times/s</div>
       </div>
       <script>
         let count = 0;
         setInterval(() => {
-          document.querySelector('#remote-to-main-count').innerText = count;
+          document.querySelector('#remote-to-main-count').innerText = `${count} times/s`;
           count = 0;
         }, 1000);
 
@@ -64,7 +64,12 @@
         ipcRenderer.on('asynchronous-reply', (_event, raw) => {
           count += 1;
           console.log(raw);
-          ipcRenderer.send('asynchronous-message', +raw + 1);
+          // 这里对消息交换暂时做了限速，以保证缓冲区能及时反应
+          // NodeJS 的流提前截断 Bug 一定要修
+          setTimeout(
+            () => ipcRenderer.send('asynchronous-message', +raw + 1),
+            10
+          );
         });
       </script>
     </div>
