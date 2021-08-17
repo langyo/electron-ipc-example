@@ -2,15 +2,13 @@
 using System.IO;
 using System.IO.Pipes;
 using System.Security.Principal;
-using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace IPCDemo.CS
 {
   public class IMsg
   {
-    public Int64 caller { get; set; }
+    public string caller { get; set; }
     public string callee { get; set; }
     public string[] args { get; set; }
   }
@@ -19,23 +17,30 @@ namespace IPCDemo.CS
   {
     public static void Main(string[] args)
     {
-      var pipeClient =
-          new NamedPipeClientStream(".", "electronIPCDemo",
+      // 根据传入的命令行参数，连接到对应的命名管道
+      var socketClient =
+          new NamedPipeClientStream(".", args[0],
               PipeDirection.InOut, PipeOptions.None,
               TokenImpersonationLevel.Impersonation);
+      socketClient.Connect();
+      var socketClientStream = new StreamString(socketClient);
 
-      Console.WriteLine("正在连接到渲染进程...\n");
-      pipeClient.Connect();
-
-      var ss = new StreamString(pipeClient);
-      for (var s = ss.Read(); ; s = ss.Read())
+      // 创建自己的命名管道，并将命名管道的名称交给对方
+      string socketServerAddress = Guid.NewGuid().ToString();
+      socketClientStream.Write(new IMsg
+      {
+        caller = "backend-" + Guid.NewGuid().ToString(),
+        callee = "$shakehand",
+        args = new string[1] { socketServerAddress }
+      });
+      for (var s = socketClientStream.Read(); ; s = socketClientStream.Read())
       {
         int num = Convert.ToInt32(s.args[0]);
         num += 1;
-        ss.Write(new IMsg
+        socketClientStream.Write(new IMsg
         {
           caller = s.caller,
-          callee = args[1],
+          callee = s.callee,
           args = new string[1] { Convert.ToString(num) }
         });
       }
