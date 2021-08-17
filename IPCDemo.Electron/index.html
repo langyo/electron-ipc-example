@@ -56,7 +56,9 @@
       <script>
         let count = 0;
         setInterval(() => {
-          document.querySelector('#remote-to-main-count').innerText = `${count} times/s`;
+          document.querySelector(
+            '#remote-to-main-count'
+          ).innerText = `${count} times/s`;
           count = 0;
         }, 1000);
 
@@ -66,10 +68,7 @@
           console.log(raw);
           // 这里对消息交换暂时做了限速，以保证缓冲区能及时反应
           // NodeJS 的流提前截断 Bug 一定要修
-          setTimeout(
-            () => ipcRenderer.send('asynchronous-message', +raw + 1),
-            10
-          );
+          ipcRenderer.send('asynchronous-message', +raw + 1);
         });
       </script>
     </div>

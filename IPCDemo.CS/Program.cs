@@ -37,7 +37,7 @@ namespace IPCDemo.CS
       });
       socketServer.WaitForConnection();
 
-      for (var s = socketServerStream.Read(); ; s = socketServerStream.Read())
+      for (var s = socketServerStream.Read(); socketClient.IsConnected; s = socketServerStream.Read())
       {
         int num = Convert.ToInt32(s.args[0]);
         num += 1;
@@ -48,6 +48,9 @@ namespace IPCDemo.CS
           args = new string[1] { Convert.ToString(num) }
         });
       }
+
+      socketClient.Close();
+      socketServer.Close();
     }
   }
 

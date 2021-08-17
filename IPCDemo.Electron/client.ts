@@ -20,16 +20,6 @@ function encodeBuffer(obj: IMsg): Buffer {
   ]);
 }
 
-function decodeBuffer(buffer: Buffer): IMsg {
-  let length = buffer[0] * 256 + buffer[1];
-  if (buffer.length !== length + 2) {
-    throw Error(
-      `无法分析的消息长度，预计长度 ${length + 2}，实际长度 ${buffer.length}`
-    );
-  }
-  return JSON.parse(buffer.slice(2).toString('utf8'));
-}
-
 let outsideIPCServerConnection: Socket;
 let outsideIPCServerAddress: string = generateUUID();
 let outsideIPCClientConnection: Socket;
@@ -44,8 +34,20 @@ let outsideIPCServer = createServer((connect) => {
   connect.on('close', () => {
     console.log('对外 IPC 通道已关闭');
   });
+
+  let bufferCache: Buffer = Buffer.from([]);
   connect.on('data', (data: Buffer) => {
-    const { caller, callee, args } = decodeBuffer(data);
+    bufferCache = Buffer.concat([bufferCache, data]);
+    if (bufferCache.length < 2) {
+      return;
+    }
+    const length = bufferCache[0] * 256 + bufferCache[1];
+    if (bufferCache.length < length + 2) {
+      return;
+    }
+
+    const { caller, callee, args } = JSON.parse(bufferCache.slice(2, length + 2).toString('utf8'));
+    bufferCache = bufferCache.slice(length + 2);
     console.log('入口:', caller, callee, args);
     switch (callee) {
       case '$shakehand':
