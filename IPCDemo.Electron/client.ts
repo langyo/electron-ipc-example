@@ -22,8 +22,6 @@ function encodeBuffer(obj: IMsg): Buffer {
 
 let outsideIPCServerConnection: Socket;
 let outsideIPCServerAddress: string = generateUUID();
-let outsideIPCClientConnection: Socket;
-let outsideIPCClientAddress: string;
 let outsideIPCServer = createServer((connect) => {
   console.log('已检测到连接');
   outsideIPCServerConnection = connect;
@@ -50,31 +48,16 @@ let outsideIPCServer = createServer((connect) => {
     bufferCache = bufferCache.slice(length + 2);
     console.log('入口:', caller, callee, args);
     switch (callee) {
-      case '$shakehand':
-        outsideIPCClientAddress = args[0];
-        outsideIPCClientConnection = createConnection(
-          join('\\\\?\\pipe', `\\${outsideIPCClientAddress}`),
-          () => {
-            console.log(
-              '双向 IPC 已握手',
-              outsideIPCClientAddress,
-              '<->',
-              outsideIPCServerAddress
-            );
-            // 创建连接后，发起第一次消息交换
-            const uuid = 'web-' + generateUUID();
-            console.log('出口:', uuid, 'test', ['0']);
-            outsideIPCClientConnection?.write(
-              encodeBuffer({ caller: uuid, callee: 'test', args: [`${0}`] })
-            );
-          }
-        );
-        break;
       case 'test':
         win?.webContents.send('asynchronous-reply', args[0]);
         break;
     }
   });
+  const uuid = 'web-' + generateUUID();
+  console.log('出口:', uuid, 'test', ['1']);
+  outsideIPCServerConnection?.write(
+    encodeBuffer({ caller: uuid, callee: 'test', args: ['1'] })
+  );
 }).listen(join('\\\\?\\pipe', `\\${outsideIPCServerAddress}`));
 
 import { exec } from 'child_process';
@@ -95,7 +78,7 @@ app.whenReady().then(() => {
   ipcMain.on('asynchronous-message', (_event, raw) => {
     const uuid = 'web-' + generateUUID();
     console.log('出口:', uuid, 'test', [`${raw}`]);
-    outsideIPCClientConnection?.write(
+    outsideIPCServerConnection?.write(
       encodeBuffer({ caller: uuid, callee: 'test', args: [`${raw}`] })
     );
   });

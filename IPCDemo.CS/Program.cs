@@ -22,18 +22,7 @@ namespace IPCDemo.CS
               TokenImpersonationLevel.Impersonation);
       socketClient.Connect();
 
-      // 创建自己的命名管道，并将命名管道的名称交给对方
-      var socketServerAddress = Guid.NewGuid().ToString();
-      using var socketServer = new NamedPipeServerStream(socketServerAddress, PipeDirection.InOut, 1);
-      socketClient.Write(new Msg
-      (
-        Caller: "cs-" + Guid.NewGuid().ToString(),
-        Callee: "$shakehand",
-        Args: new[] { socketServerAddress }
-      ));
-      socketServer.WaitForConnection();
-
-      for (var s = socketServer.Read(); socketClient.IsConnected; s = socketServer.Read())
+      for (var s = socketClient.Read(); socketClient.IsConnected; s = socketClient.Read())
       {
         var num = int.Parse(s.Args[0], CultureInfo.InvariantCulture);
         num += 7;
