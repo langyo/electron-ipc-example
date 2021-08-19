@@ -25,7 +25,7 @@ namespace IPCDemo.CS
       for (var s = socketClient.Read(); socketClient.IsConnected; s = socketClient.Read())
       {
         var num = int.Parse(s.Args[0], CultureInfo.InvariantCulture);
-        num += 7;
+        num += 1;
         socketClient.Write(new Msg
         (
           Caller: s.Caller,

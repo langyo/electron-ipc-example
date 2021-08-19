@@ -44,7 +44,9 @@ let outsideIPCServer = createServer((connect) => {
       return;
     }
 
-    const { caller, callee, args } = JSON.parse(bufferCache.slice(2, length + 2).toString('utf8'));
+    const { caller, callee, args } = JSON.parse(
+      bufferCache.slice(2, length + 2).toString('utf8')
+    );
     bufferCache = bufferCache.slice(length + 2);
     console.log('入口:', caller, callee, args);
     switch (callee) {
@@ -78,9 +80,11 @@ app.whenReady().then(() => {
   ipcMain.on('asynchronous-message', (_event, raw) => {
     const uuid = 'web-' + generateUUID();
     console.log('出口:', uuid, 'test', [`${raw}`]);
-    outsideIPCServerConnection?.write(
-      encodeBuffer({ caller: uuid, callee: 'test', args: [`${raw}`] })
-    );
+    try {
+      outsideIPCServerConnection?.write(
+        encodeBuffer({ caller: uuid, callee: 'test', args: [`${raw}`] })
+      );
+    } catch (_e) {}
   });
 
   win = new BrowserWindow({
