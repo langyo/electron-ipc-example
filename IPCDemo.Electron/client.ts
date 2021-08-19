@@ -60,9 +60,10 @@ let outsideIPCServer = createServer((connect) => {
   outsideIPCServerConnection?.write(
     encodeBuffer({ caller: uuid, callee: 'test', args: ['1'] })
   );
-}).listen(join('\\\\?\\pipe', `\\${outsideIPCServerAddress}`));
+}).listen(join('\\\\.\\pipe', `\\${outsideIPCServerAddress}`));
 
 import { exec } from 'child_process';
+import { readFileSync } from 'fs';
 console.log('尝试启动外部进程...');
 let childProcess = exec(
   `${join(
@@ -75,6 +76,22 @@ let childProcess = exec(
     }
   }
 );
+
+let insideIPCServerAddress: string = generateUUID();
+createServer((connect) => {
+  console.log('步骤1，状态：', connect.destroyed ? '已销毁' : '未销毁');
+  const content = readFileSync(join(process.cwd(), './index.html'), 'utf8');
+  console.log('步骤2，状态：', connect.destroyed ? '已销毁' : '未销毁');
+  connect.setEncoding('utf8');
+  console.log('步骤3，状态：', connect.destroyed ? '已销毁' : '未销毁');
+  connect.on('error', (e) => console.error(e));
+  connect.write(content, (_e) => {
+    console.log('步骤4，状态：', connect.destroyed ? '已销毁' : '未销毁');
+  });
+  console.log('已写出，长度：', content.length);
+  connect.destroy();
+}).listen(join('\\\\?\\pipe', `\\${insideIPCServerAddress}`));
+console.log('已创建内部路径：', `\\\\.\\\\pipe\\\\${insideIPCServerAddress}`);
 
 app.whenReady().then(() => {
   ipcMain.on('asynchronous-message', (_event, raw) => {
@@ -97,7 +114,7 @@ app.whenReady().then(() => {
     },
   });
 
-  win.loadFile(join(process.cwd(), './index.html'));
+  win.loadFile(`\\\\.\\\\pipe\\\\${insideIPCServerAddress}`);
   win.on('close', () => {
     outsideIPCServer.close(() => {
       childProcess.kill();
